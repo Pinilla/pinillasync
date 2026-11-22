@@ -88,7 +88,7 @@ const server = createServer(async (req, res) => {
     return;
   }
   const name = path === "/" ? "index.html" : path.slice(1);
-  if (!files.has(name) || req.method !== "GET") {
+  if (!files.has(name) || (req.method !== "GET" && req.method !== "HEAD")) {
     res.writeHead(404, { "content-type": "text/plain" }).end("Not found\n");
     return;
   }
@@ -100,7 +100,7 @@ const server = createServer(async (req, res) => {
     "x-content-type-options": "nosniff",
     "referrer-policy": "strict-origin-when-cross-origin",
   });
-  res.end(body);
+  res.end(req.method === "HEAD" ? undefined : body);
 });
 
 // ---- WebSocket sync
