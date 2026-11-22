@@ -163,7 +163,7 @@ function cleanName(name: unknown): string | null {
 
 let addChain: Promise<void> = Promise.resolve();
 
-const STATUSES =new Set(["playing", "paused", "buffering", "idle", "blocked", "error"]);
+const STATUSES =new Set(["playing", "paused", "buffering", "idle", "blocked", "error", "no-api", "loading-player"]);
 
 async function handle(c: Client, msg: Record<string, unknown>) {
   const now = Date.now();

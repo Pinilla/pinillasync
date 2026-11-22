@@ -108,7 +108,7 @@ function makePlayer() {
     height: "100%",
     playerVars: { playsinline: 1, rel: 0, autoplay: 0 },
     events: {
-      onReady: () => { playerReady = true; tick(); },
+      onReady: () => { playerReady = true; if (state) render(); tick(); },
       onStateChange: onPlayerState,
       onError: onPlayerError,
     },
@@ -172,7 +172,6 @@ function onPlayerError(e) {
 function tick() {
   if (!playerReady || !state) return;
   const cur = state.current;
-  $("#empty").hidden = !!cur;
 
   if (!cur) {
     if (loadedItem) { quiet(); player.stopVideo(); loadedItem = null; }
@@ -281,7 +280,9 @@ setInterval(tick, 250);
 setInterval(() => {
   if (!joined) return;
   let status = "idle", drift = null;
-  if (playerReady && state && state.current) {
+  if (!apiReady) status = "no-api";
+  else if (!playerReady) status = "loading-player";
+  else if (state && state.current) {
     const ps = player.getPlayerState();
     if (errorFor) status = "error";
     else if (blocked) status = "blocked";
@@ -297,6 +298,11 @@ setInterval(() => {
 
 function render() {
   const cur = state.current;
+  const empty = $("#empty");
+  empty.hidden = !!cur && playerReady;
+  empty.textContent = !cur ? "Add a YouTube link to start."
+    : !joined ? "Join to start listening."
+    : "Loading the YouTube player…";
   $("#now-title").textContent = cur ? cur.title : "Nothing playing";
   $("#now-by").textContent = cur ? `Added by ${cur.addedBy}` : "";
   $("#skip").disabled = !cur;
@@ -366,7 +372,7 @@ function describe(u) {
     const ms = Math.round(u.drift * 1000);
     return Math.abs(ms) < 15 ? "in sync" : `${ms > 0 ? "+" : ""}${ms} ms`;
   }
-  return { playing: "playing", paused: "paused", buffering: "loading", blocked: "needs a click", error: "can't play this", idle: "idle" }[u.status] ?? u.status;
+  return { playing: "playing", paused: "paused", buffering: "loading", blocked: "needs a click", error: "can't play this", idle: "idle", "no-api": "YouTube player blocked", "loading-player": "loading player" }[u.status] ?? u.status;
 }
 
 let messageTimer = null;
@@ -397,6 +403,17 @@ $("#join-form").addEventListener("submit", (e) => {
   $("#join").hidden = true;
   send({ type: "hello", name: myName() });
   if (apiReady) makePlayer();
+  if (state) render();
+  // If YouTube's player script never arrives, say so instead of waiting forever.
+  setTimeout(() => {
+    if (playerReady) return;
+    const m = $("#message");
+    m.textContent = apiReady
+      ? "The YouTube player hasn't finished loading. Try reloading the page."
+      : "The YouTube player couldn't load. An ad or content blocker may be blocking youtube.com. Allow it for this site and reload.";
+    m.hidden = false;
+    clearTimeout(messageTimer);
+  }, 10000);
 });
 
 $("#add-form").addEventListener("submit", (e) => {
