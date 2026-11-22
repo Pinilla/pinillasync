@@ -1,0 +1,26 @@
+[Unit]
+Description=pinillasync, YouTube in sync with a friend
+After=network.target
+
+[Service]
+Type=simple
+User=pinillasync
+Group=pinillasync
+WorkingDirectory=/opt/pinillasync
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3200
+Environment=SYNC_DATA=/var/lib/pinillasync
+Environment=SYNC_ORIGINS=https://sync.pinillaweb.org
+ExecStart=/opt/node/bin/node src/server.ts
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/pinillasync
+
+[Install]
+WantedBy=multi-user.target

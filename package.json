@@ -1,0 +1,16 @@
+{
+  "name": "pinillasync",
+  "version": "0.1.0",
+  "description": "Play YouTube videos in sync with a friend.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node src/server.ts",
+    "test": "node --test \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}

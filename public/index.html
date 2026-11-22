@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Sync</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="join" class="overlay">
+    <form id="join-form" class="card">
+      <h1>Sync</h1>
+      <p>Play YouTube in step with a friend.</p>
+      <label>Your name <input id="name" maxlength="30" autocomplete="nickname" required></label>
+      <button type="submit">Join</button>
+      <p class="hint">Joining also lets the page play sound.</p>
+    </form>
+  </div>
+
+  <main>
+    <section class="stage">
+      <div class="player-box"><div id="player"></div><div id="empty" class="empty">Add a YouTube link to start.</div></div>
+      <div class="now">
+        <div>
+          <div id="now-title" class="now-title">Nothing playing</div>
+          <div id="now-by" class="muted"></div>
+        </div>
+        <button id="skip" type="button" disabled>Skip</button>
+      </div>
+      <div id="message" class="message" hidden></div>
+    </section>
+
+    <aside>
+      <form id="add-form" class="add">
+        <input id="add-input" placeholder="Paste a YouTube link" autocomplete="off">
+        <button type="submit">Add</button>
+      </form>
+
+      <h2>Up next</h2>
+      <ol id="queue" class="queue"></ol>
+      <p id="queue-empty" class="muted">Nothing queued.</p>
+
+      <h2>Here now</h2>
+      <ul id="people" class="people"></ul>
+      <p id="conn" class="muted">Connecting…</p>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+  <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>
