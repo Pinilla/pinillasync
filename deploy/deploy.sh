@@ -5,7 +5,7 @@
 set -euo pipefail
 
 APP=/opt/pinillasync
-REPO=${PINILLASYNC_REPO:-$HOME/pinillasync}
+REPO=${PINILLASYNC_REPO:-https://github.com/Pinilla/pinillasync.git}
 export PATH=/opt/node/bin:$PATH
 
 if [ ! -d "$APP/.git" ]; then
