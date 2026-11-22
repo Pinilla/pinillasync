@@ -96,10 +96,36 @@ setInterval(() => send({ type: "ping", t0: Date.now() }), 10000);
 
 // ---- player
 
-window.onYouTubeIframeAPIReady = () => {
+// "pending", "loaded" (script arrived), "error" (the request failed), or "ready".
+let apiScript = "pending";
+
+function onApiReady() {
+  if (apiReady) return;
   apiReady = true;
+  apiScript = "ready";
   if (joined) makePlayer();
-};
+}
+window.onYouTubeIframeAPIReady = onApiReady;
+
+// Loads YouTube's player script, and its older address if the first fails.
+function loadApi(urls) {
+  const s = document.createElement("script");
+  s.src = urls[0];
+  s.onload = () => { if (apiScript !== "ready") apiScript = "loaded"; };
+  s.onerror = () => {
+    s.remove();
+    if (urls.length > 1) loadApi(urls.slice(1));
+    else apiScript = "error";
+  };
+  document.head.append(s);
+}
+loadApi(["https://www.youtube.com/iframe_api", "https://www.youtube.com/player_api"]);
+
+// Some setups load the script but never call back. Notice YT.Player anyway.
+const apiPoll = setInterval(() => {
+  if (apiReady) clearInterval(apiPoll);
+  else if (window.YT && typeof window.YT.Player === "function" && window.YT.loaded) onApiReady();
+}, 500);
 
 function makePlayer() {
   if (player) return;
@@ -280,7 +306,7 @@ setInterval(tick, 250);
 setInterval(() => {
   if (!joined) return;
   let status = "idle", drift = null;
-  if (!apiReady) status = "no-api";
+  if (!apiReady) status = apiScript === "error" ? "no-api" : apiScript === "loaded" ? "api-stuck" : "api-pending";
   else if (!playerReady) status = "loading-player";
   else if (state && state.current) {
     const ps = player.getPlayerState();
@@ -372,7 +398,7 @@ function describe(u) {
     const ms = Math.round(u.drift * 1000);
     return Math.abs(ms) < 15 ? "in sync" : `${ms > 0 ? "+" : ""}${ms} ms`;
   }
-  return { playing: "playing", paused: "paused", buffering: "loading", blocked: "needs a click", error: "can't play this", idle: "idle", "no-api": "YouTube player blocked", "loading-player": "loading player" }[u.status] ?? u.status;
+  return { playing: "playing", paused: "paused", buffering: "loading", blocked: "needs a click", error: "can't play this", idle: "idle", "no-api": "YouTube player blocked", "api-stuck": "player script stuck", "api-pending": "waiting for YouTube", "loading-player": "loading player" }[u.status] ?? u.status;
 }
 
 let messageTimer = null;
@@ -408,7 +434,7 @@ $("#join-form").addEventListener("submit", (e) => {
   setTimeout(() => {
     if (playerReady) return;
     const m = $("#message");
-    m.textContent = apiReady
+    m.textContent = apiReady || apiScript !== "error"
       ? "The YouTube player hasn't finished loading. Try reloading the page."
       : "The YouTube player couldn't load. An ad or content blocker may be blocking youtube.com. Allow it for this site and reload.";
     m.hidden = false;
