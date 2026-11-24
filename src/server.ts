@@ -15,7 +15,10 @@ const PORT = Number(process.env.PORT ?? 3200);
 const DATA = process.env.SYNC_DATA ?? join(dirname(fileURLToPath(import.meta.url)), "..", "data");
 // Comma-separated list of allowed page origins for the WebSocket. Empty allows any,
 // which is what local development wants.
-const ORIGINS = (process.env.SYNC_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+const ORIGINS = (process.env.SYNC_ORIGINS ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
 const STATE_FILE = join(DATA, "state.json");
 const MAX_CLIENTS = 30;
@@ -43,14 +46,21 @@ let state: RoomState = room.emptyRoom(Date.now());
 try {
   const saved = JSON.parse(await readFile(STATE_FILE, "utf8")) as RoomState;
   // Come back paused at the saved spot; nobody is listening after a restart.
-  state = { ...saved, playing: false, position: room.positionAt(saved, Date.now()), updatedAt: Date.now() };
+  state = {
+    ...saved,
+    playing: false,
+    position: room.positionAt(saved, Date.now()),
+    updatedAt: Date.now(),
+  };
 } catch {
   // No saved state yet.
 }
 
 let saveTimer: NodeJS.Timeout | null = null;
 function scheduleSave() {
-  if (saveTimer) return;
+  if (saveTimer) {
+    return;
+  }
   saveTimer = setTimeout(async () => {
     saveTimer = null;
     try {
@@ -69,7 +79,9 @@ async function lookupTitle(videoId: string): Promise<string | null> {
   const url = `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}`;
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const body = (await res.json()) as { title?: unknown };
     return typeof body.title === "string" ? body.title.slice(0, 200) : null;
   } catch {
@@ -120,7 +132,11 @@ const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 });
 server.on("upgrade", (req, socket, head) => {
   const path = new URL(req.url ?? "/", "http://x").pathname;
   const origin = req.headers.origin ?? "";
-  if (path !== "/ws" || (ORIGINS.length > 0 && !ORIGINS.includes(origin)) || clients.size >= MAX_CLIENTS) {
+  if (
+    path !== "/ws" ||
+    (ORIGINS.length > 0 && !ORIGINS.includes(origin)) ||
+    clients.size >= MAX_CLIENTS
+  ) {
     socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");
     socket.destroy();
     return;
@@ -129,12 +145,18 @@ server.on("upgrade", (req, socket, head) => {
 });
 
 function send(ws: WebSocket, msg: unknown) {
-  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(msg));
+  }
 }
 
 function broadcast(msg: unknown) {
   const text = JSON.stringify(msg);
-  for (const c of clients.values()) if (c.ws.readyState === WebSocket.OPEN) c.ws.send(text);
+  for (const c of clients.values()) {
+    if (c.ws.readyState === WebSocket.OPEN) {
+      c.ws.send(text);
+    }
+  }
 }
 
 function stateMessage() {
@@ -149,21 +171,36 @@ function presenceMessage() {
 }
 
 function update(next: RoomState) {
-  if (next === state) return;
+  if (next === state) {
+    return;
+  }
   state = next;
   broadcast(stateMessage());
   scheduleSave();
 }
 
 function cleanName(name: unknown): string | null {
-  if (typeof name !== "string") return null;
+  if (typeof name !== "string") {
+    return null;
+  }
   const n = name.replace(/\s+/g, " ").trim().slice(0, 30);
   return n || null;
 }
 
 let addChain: Promise<void> = Promise.resolve();
 
-const STATUSES =new Set(["playing", "paused", "buffering", "idle", "blocked", "error", "no-api", "api-stuck", "api-pending", "loading-player"]);
+const STATUSES = new Set([
+  "playing",
+  "paused",
+  "buffering",
+  "idle",
+  "blocked",
+  "error",
+  "no-api",
+  "api-stuck",
+  "api-pending",
+  "loading-player",
+]);
 
 async function handle(c: Client, msg: Record<string, unknown>) {
   const now = Date.now();
@@ -176,7 +213,10 @@ async function handle(c: Client, msg: Record<string, unknown>) {
       broadcast(presenceMessage());
       return;
     case "report":
-      c.drift = typeof msg.drift === "number" && Number.isFinite(msg.drift) ? Math.round(msg.drift * 1000) / 1000 : null;
+      c.drift =
+        typeof msg.drift === "number" && Number.isFinite(msg.drift)
+          ? Math.round(msg.drift * 1000) / 1000
+          : null;
       c.status = typeof msg.status === "string" && STATUSES.has(msg.status) ? msg.status : "idle";
       broadcast(presenceMessage());
       return;
@@ -232,7 +272,9 @@ wss.on("connection", (ws) => {
       return;
     }
     if (msg && typeof msg === "object") {
-      handle(c, msg as Record<string, unknown>).catch((err) => console.error("Message failed:", err));
+      handle(c, msg as Record<string, unknown>).catch((err) =>
+        console.error("Message failed:", err),
+      );
     }
   });
 
@@ -243,7 +285,9 @@ wss.on("connection", (ws) => {
 });
 
 setInterval(() => {
-  for (const c of clients.values()) c.messages = 0;
+  for (const c of clients.values()) {
+    c.messages = 0;
+  }
 }, 1000).unref();
 
 server.listen(PORT, HOST, () => console.log(`pinillasync listening on http://${HOST}:${PORT}`));

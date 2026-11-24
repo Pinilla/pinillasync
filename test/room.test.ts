@@ -17,9 +17,18 @@ test("parseVideoId reads common link shapes", () => {
     `https://www.youtube.com/shorts/${id}`,
     `https://www.youtube.com/embed/${id}`,
     `https://www.youtube.com/live/${id}`,
-  ]) assert.equal(room.parseVideoId(input), id, input);
-  for (const bad of ["", "hello", "https://example.com/watch?v=dQw4w9WgXcQ", "https://youtube.com/watch?v=short", 42])
+  ]) {
+    assert.equal(room.parseVideoId(input), id, input);
+  }
+  for (const bad of [
+    "",
+    "hello",
+    "https://example.com/watch?v=dQw4w9WgXcQ",
+    "https://youtube.com/watch?v=short",
+    42,
+  ]) {
     assert.equal(room.parseVideoId(bad), null, String(bad));
+  }
 });
 
 test("the first item loads paused, later ones queue", () => {
@@ -28,7 +37,10 @@ test("the first item loads paused, later ones queue", () => {
   assert.equal(s.current?.id, "a");
   assert.equal(s.playing, false);
   s = room.add(s, item("b"), 0);
-  assert.deepEqual(s.queue.map((i) => i.id), ["b"]);
+  assert.deepEqual(
+    s.queue.map((i) => i.id),
+    ["b"],
+  );
 });
 
 test("position advances only while playing", () => {
@@ -71,7 +83,10 @@ test("playNow and remove", () => {
   s = room.playNow(s, "c", 10);
   assert.equal(s.current?.id, "c");
   assert.equal(s.playing, true);
-  assert.deepEqual(s.queue.map((i) => i.id), ["b"]);
+  assert.deepEqual(
+    s.queue.map((i) => i.id),
+    ["b"],
+  );
   s = room.remove(s, "b");
   assert.deepEqual(s.queue, []);
 });

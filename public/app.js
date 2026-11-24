@@ -8,27 +8,32 @@
 // server, which tells everyone.
 
 const $ = (s) => document.querySelector(s);
-const YT_UNSTARTED = -1, YT_ENDED = 0, YT_PLAYING = 1, YT_PAUSED = 2, YT_BUFFERING = 3, YT_CUED = 5;
+const YT_UNSTARTED = -1,
+  YT_ENDED = 0,
+  YT_PLAYING = 1,
+  YT_PAUSED = 2,
+  YT_BUFFERING = 3,
+  YT_CUED = 5;
 
 let ws = null;
 let myId = null;
 let state = null;
-let offset = 0;           // server clock minus local clock, in ms
-const pings = [];         // recent {rtt, offset} samples
+let offset = 0; // server clock minus local clock, in ms
+const pings = []; // recent {rtt, offset} samples
 let player = null;
 let playerReady = false;
 let apiReady = false;
 let joined = false;
-let loadedItem = null;    // item id currently loaded in the player
-let quietUntil = 0;       // ignore player events we caused until this time
-let lastObs = null;       // last {time, at} seen while playing, to spot user seeks
-let pausedAt = null;      // player time when we last settled while paused
-const drifts = [];        // recent drift samples in seconds
+let loadedItem = null; // item id currently loaded in the player
+let quietUntil = 0; // ignore player events we caused until this time
+let lastObs = null; // last {time, at} seen while playing, to spot user seeks
+let pausedAt = null; // player time when we last settled while paused
+const drifts = []; // recent drift samples in seconds
 let rate = 1;
-let rateWorks = null;     // whether the player accepts small rate changes
-let seekLead = 0.15;      // seconds to seek ahead, learned from how long seeks take
+let rateWorks = null; // whether the player accepts small rate changes
+let seekLead = 0.15; // seconds to seek ahead, learned from how long seeks take
 let lastSeek = 0;
-let pendingUntil = 0;   // after our own play/pause/seek, wait for the room to agree
+let pendingUntil = 0; // after our own play/pause/seek, wait for the room to agree
 let blocked = false;
 let errorFor = null;
 
@@ -37,8 +42,12 @@ let errorFor = null;
 const serverNow = () => Date.now() + offset;
 
 function expected() {
-  if (!state || !state.current) return 0;
-  if (!state.playing) return state.position;
+  if (!state || !state.current) {
+    return 0;
+  }
+  if (!state.playing) {
+    return state.position;
+  }
   return state.position + (serverNow() - state.updatedAt) / 1000;
 }
 
@@ -46,13 +55,17 @@ function onPong(msg) {
   const now = Date.now();
   const rtt = now - msg.t0;
   pings.push({ rtt, offset: msg.serverTime - (msg.t0 + rtt / 2) });
-  if (pings.length > 12) pings.shift();
+  if (pings.length > 12) {
+    pings.shift();
+  }
   // The sample with the shortest round trip has the least room for error.
   offset = pings.reduce((a, b) => (b.rtt < a.rtt ? b : a)).offset;
 }
 
 function burstPings() {
-  for (let i = 0; i < 6; i++) setTimeout(() => send({ type: "ping", t0: Date.now() }), i * 150);
+  for (let i = 0; i < 6; i++) {
+    setTimeout(() => send({ type: "ping", t0: Date.now() }), i * 150);
+  }
 }
 
 // ---- connection
@@ -65,7 +78,9 @@ function connect() {
     $("#conn").textContent = "";
     pings.length = 0;
     burstPings();
-    if (joined) send({ type: "hello", name: myName() });
+    if (joined) {
+      send({ type: "hello", name: myName() });
+    }
   };
   ws.onclose = () => {
     $("#conn").textContent = "Disconnected. Reconnecting…";
@@ -73,16 +88,28 @@ function connect() {
   };
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
-    if (msg.type === "welcome") myId = msg.id;
-    else if (msg.type === "pong") onPong(msg);
-    else if (msg.type === "state") { state = msg.state; pendingUntil = 0; drifts.length = 0; render(); tick(); }
-    else if (msg.type === "presence") renderPeople(msg.users);
-    else if (msg.type === "error") showMessage(msg.message);
+    if (msg.type === "welcome") {
+      myId = msg.id;
+    } else if (msg.type === "pong") {
+      onPong(msg);
+    } else if (msg.type === "state") {
+      state = msg.state;
+      pendingUntil = 0;
+      drifts.length = 0;
+      render();
+      tick();
+    } else if (msg.type === "presence") {
+      renderPeople(msg.users);
+    } else if (msg.type === "error") {
+      showMessage(msg.message);
+    }
   };
 }
 
 function send(msg) {
-  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg));
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(msg));
+  }
 }
 
 // Sends a play, pause or seek made on this player. Until the server answers,
@@ -100,10 +127,14 @@ setInterval(() => send({ type: "ping", t0: Date.now() }), 10000);
 let apiScript = "pending";
 
 function onApiReady() {
-  if (apiReady) return;
+  if (apiReady) {
+    return;
+  }
   apiReady = true;
   apiScript = "ready";
-  if (joined) makePlayer();
+  if (joined) {
+    makePlayer();
+  }
 }
 window.onYouTubeIframeAPIReady = onApiReady;
 
@@ -111,11 +142,18 @@ window.onYouTubeIframeAPIReady = onApiReady;
 function loadApi(urls) {
   const s = document.createElement("script");
   s.src = urls[0];
-  s.onload = () => { if (apiScript !== "ready") apiScript = "loaded"; };
+  s.onload = () => {
+    if (apiScript !== "ready") {
+      apiScript = "loaded";
+    }
+  };
   s.onerror = () => {
     s.remove();
-    if (urls.length > 1) loadApi(urls.slice(1));
-    else apiScript = "error";
+    if (urls.length > 1) {
+      loadApi(urls.slice(1));
+    } else {
+      apiScript = "error";
+    }
   };
   document.head.append(s);
 }
@@ -123,18 +161,29 @@ loadApi(["https://www.youtube.com/iframe_api", "https://www.youtube.com/player_a
 
 // Some setups load the script but never call back. Notice YT.Player anyway.
 const apiPoll = setInterval(() => {
-  if (apiReady) clearInterval(apiPoll);
-  else if (window.YT && typeof window.YT.Player === "function" && window.YT.loaded) onApiReady();
+  if (apiReady) {
+    clearInterval(apiPoll);
+  } else if (window.YT && typeof window.YT.Player === "function" && window.YT.loaded) {
+    onApiReady();
+  }
 }, 500);
 
 function makePlayer() {
-  if (player) return;
+  if (player) {
+    return;
+  }
   player = new YT.Player("player", {
     width: "100%",
     height: "100%",
     playerVars: { playsinline: 1, rel: 0, autoplay: 0 },
     events: {
-      onReady: () => { playerReady = true; if (state) render(); tick(); },
+      onReady: () => {
+        playerReady = true;
+        if (state) {
+          render();
+        }
+        tick();
+      },
       onStateChange: onPlayerState,
       onError: onPlayerError,
     },
@@ -146,14 +195,18 @@ function quiet(ms = 1200) {
 }
 
 function setRate(r) {
-  if (r === rate) return;
+  if (r === rate) {
+    return;
+  }
   rate = r;
   player.setPlaybackRate(r);
   if (r !== 1 && rateWorks === null) {
     // YouTube ignores rates it doesn't support. Check whether this one stuck.
     setTimeout(() => {
       rateWorks = Math.abs(player.getPlaybackRate() - r) < 0.001;
-      if (!rateWorks) rate = player.getPlaybackRate();
+      if (!rateWorks) {
+        rate = player.getPlaybackRate();
+      }
     }, 600);
   }
 }
@@ -167,12 +220,16 @@ function seekTo(t) {
 }
 
 function onPlayerState(e) {
-  if (!state || !state.current) return;
+  if (!state || !state.current) {
+    return;
+  }
   if (e.data === YT_ENDED) {
     send({ type: "ended", itemId: state.current.id });
     return;
   }
-  if (Date.now() < quietUntil) return;
+  if (Date.now() < quietUntil) {
+    return;
+  }
   const t = player.getCurrentTime();
   // Only report a change when the player disagrees with the room. Changes we
   // made to match the room agree with it, so they don't echo back.
@@ -184,10 +241,13 @@ function onPlayerState(e) {
 }
 
 function onPlayerError(e) {
-  if (!state || !state.current) return;
-  const why = e.data === 101 || e.data === 150
-    ? "The uploader doesn't allow this video to play on other sites."
-    : "YouTube couldn't play this video.";
+  if (!state || !state.current) {
+    return;
+  }
+  const why =
+    e.data === 101 || e.data === 150
+      ? "The uploader doesn't allow this video to play on other sites."
+      : "YouTube couldn't play this video.";
   errorFor = state.current.id;
   showMessage(`${why} Skipping it in a few seconds.`);
   const itemId = state.current.id;
@@ -196,11 +256,17 @@ function onPlayerError(e) {
 
 // Runs four times a second and on every state change.
 function tick() {
-  if (!playerReady || !state) return;
+  if (!playerReady || !state) {
+    return;
+  }
   const cur = state.current;
 
   if (!cur) {
-    if (loadedItem) { quiet(); player.stopVideo(); loadedItem = null; }
+    if (loadedItem) {
+      quiet();
+      player.stopVideo();
+      loadedItem = null;
+    }
     return;
   }
 
@@ -212,11 +278,16 @@ function tick() {
     lastObs = null;
     pausedAt = null;
     drifts.length = 0;
-    if (state.playing) player.loadVideoById(cur.videoId, expected() + seekLead);
-    else player.cueVideoById(cur.videoId, state.position);
+    if (state.playing) {
+      player.loadVideoById(cur.videoId, expected() + seekLead);
+    } else {
+      player.cueVideoById(cur.videoId, state.position);
+    }
     return;
   }
-  if (errorFor === cur.id || Date.now() < pendingUntil) return;
+  if (errorFor === cur.id || Date.now() < pendingUntil) {
+    return;
+  }
 
   const ps = player.getPlayerState();
   const t = player.getCurrentTime();
@@ -225,21 +296,35 @@ function tick() {
 
   if (state.playing) {
     pausedAt = null;
-    if (ps === YT_ENDED) return;
+    if (ps === YT_ENDED) {
+      return;
+    }
     if (ps === YT_PAUSED || ps === YT_CUED || ps === YT_UNSTARTED) {
-      if (isQuiet) return;
+      if (isQuiet) {
+        return;
+      }
       quiet();
-      if (Math.abs(t - expected()) > 0.3) player.seekTo(expected() + seekLead, true);
+      if (Math.abs(t - expected()) > 0.3) {
+        player.seekTo(expected() + seekLead, true);
+      }
       player.playVideo();
       // If the browser blocks sound until a click, the player stays unstarted.
       setTimeout(() => {
         blocked = player.getPlayerState() === YT_UNSTARTED;
-        if (blocked) showMessage("Your browser blocked playback. Click play on the video once.");
+        if (blocked) {
+          showMessage("Your browser blocked playback. Click play on the video once.");
+        }
       }, 1500);
       return;
     }
-    if (ps !== YT_PLAYING) { lastObs = null; return; }
-    if (blocked) { blocked = false; hideMessage(); }
+    if (ps !== YT_PLAYING) {
+      lastObs = null;
+      return;
+    }
+    if (blocked) {
+      blocked = false;
+      hideMessage();
+    }
 
     // A jump the clock can't explain means someone used the seek bar.
     if (lastObs && !isQuiet) {
@@ -254,14 +339,20 @@ function tick() {
     correctDrift(t - expected(), now);
   } else {
     lastObs = null;
-    if (rate !== 1) setRate(1);
+    if (rate !== 1) {
+      setRate(1);
+    }
     if (ps === YT_PLAYING || ps === YT_BUFFERING) {
-      if (isQuiet) return;
+      if (isQuiet) {
+        return;
+      }
       quiet();
       player.pauseVideo();
       return;
     }
-    if (ps !== YT_PAUSED && ps !== YT_CUED) return;
+    if (ps !== YT_PAUSED && ps !== YT_CUED) {
+      return;
+    }
     // While paused, a moved seek bar is a user seek. Otherwise hold the room's spot.
     if (pausedAt !== null && !isQuiet && Math.abs(t - pausedAt) > 0.5) {
       pausedAt = t;
@@ -273,14 +364,20 @@ function tick() {
       pausedAt = state.position;
       return;
     }
-    if (!isQuiet) pausedAt = t;
+    if (!isQuiet) {
+      pausedAt = t;
+    }
   }
 }
 
 function correctDrift(drift, now) {
   drifts.push(drift);
-  if (drifts.length > 6) drifts.shift();
-  if (drifts.length < 3) return;
+  if (drifts.length > 6) {
+    drifts.shift();
+  }
+  if (drifts.length < 3) {
+    return;
+  }
   const sorted = [...drifts].sort((a, b) => a - b);
   const median = sorted[Math.floor(sorted.length / 2)];
 
@@ -295,27 +392,46 @@ function correctDrift(drift, now) {
     seekTo(expected() + seekLead);
     return;
   }
-  if (rateWorks === false) return;
-  if (Math.abs(median) < 0.02) setRate(1);
-  else if (Math.abs(median) > 0.05) setRate(median > 0 ? 0.95 : 1.05);
+  if (rateWorks === false) {
+    return;
+  }
+  if (Math.abs(median) < 0.02) {
+    setRate(1);
+  } else if (Math.abs(median) > 0.05) {
+    setRate(median > 0 ? 0.95 : 1.05);
+  }
 }
 
 setInterval(tick, 250);
 
 // Tell the room how this browser is doing, for the "Here now" list.
 setInterval(() => {
-  if (!joined) return;
-  let status = "idle", drift = null;
-  if (!apiReady) status = apiScript === "error" ? "no-api" : apiScript === "loaded" ? "api-stuck" : "api-pending";
-  else if (!playerReady) status = "loading-player";
-  else if (state && state.current) {
+  if (!joined) {
+    return;
+  }
+  let status = "idle",
+    drift = null;
+  if (!apiReady) {
+    status =
+      apiScript === "error" ? "no-api" : apiScript === "loaded" ? "api-stuck" : "api-pending";
+  } else if (!playerReady) {
+    status = "loading-player";
+  } else if (state && state.current) {
     const ps = player.getPlayerState();
-    if (errorFor) status = "error";
-    else if (blocked) status = "blocked";
-    else if (ps === YT_PLAYING) status = "playing";
-    else if (ps === YT_BUFFERING) status = "buffering";
-    else status = "paused";
-    if (ps === YT_PLAYING && state.playing) drift = player.getCurrentTime() - expected();
+    if (errorFor) {
+      status = "error";
+    } else if (blocked) {
+      status = "blocked";
+    } else if (ps === YT_PLAYING) {
+      status = "playing";
+    } else if (ps === YT_BUFFERING) {
+      status = "buffering";
+    } else {
+      status = "paused";
+    }
+    if (ps === YT_PLAYING && state.playing) {
+      drift = player.getCurrentTime() - expected();
+    }
   }
   send({ type: "report", status, drift });
 }, 2000);
@@ -326,9 +442,11 @@ function render() {
   const cur = state.current;
   const empty = $("#empty");
   empty.hidden = !!cur && playerReady;
-  empty.textContent = !cur ? "Add a YouTube link to start."
-    : !joined ? "Join to start listening."
-    : "Loading the YouTube player…";
+  empty.textContent = !cur
+    ? "Add a YouTube link to start."
+    : !joined
+      ? "Join to start listening."
+      : "Loading the YouTube player…";
   $("#now-title").textContent = cur ? cur.title : "Nothing playing";
   $("#now-by").textContent = cur ? `Added by ${cur.addedBy}` : "";
   $("#skip").disabled = !cur;
@@ -377,7 +495,8 @@ function renderPeople(users) {
     const name = document.createElement("span");
     const dot = document.createElement("span");
     const synced = u.status === "playing" && u.drift !== null && Math.abs(u.drift) < 0.1;
-    dot.className = "dot" + (synced || u.status === "paused" ? " good" : u.status === "idle" ? "" : " off");
+    dot.className =
+      "dot" + (synced || u.status === "paused" ? " good" : u.status === "idle" ? "" : " off");
     name.append(dot, u.name + (u.id === myId ? " (you)" : ""));
     const detail = document.createElement("span");
     detail.className = "muted";
@@ -398,7 +517,20 @@ function describe(u) {
     const ms = Math.round(u.drift * 1000);
     return Math.abs(ms) < 15 ? "in sync" : `${ms > 0 ? "+" : ""}${ms} ms`;
   }
-  return { playing: "playing", paused: "paused", buffering: "loading", blocked: "needs a click", error: "can't play this", idle: "idle", "no-api": "YouTube player blocked", "api-stuck": "player script stuck", "api-pending": "waiting for YouTube", "loading-player": "loading player" }[u.status] ?? u.status;
+  return (
+    {
+      playing: "playing",
+      paused: "paused",
+      buffering: "loading",
+      blocked: "needs a click",
+      error: "can't play this",
+      idle: "idle",
+      "no-api": "YouTube player blocked",
+      "api-stuck": "player script stuck",
+      "api-pending": "waiting for YouTube",
+      "loading-player": "loading player",
+    }[u.status] ?? u.status
+  );
 }
 
 let messageTimer = null;
@@ -419,24 +551,37 @@ function myName() {
   return $("#name").value.trim();
 }
 
-try { $("#name").value = localStorage.getItem("sync-name") ?? ""; } catch {}
+try {
+  $("#name").value = localStorage.getItem("sync-name") ?? "";
+} catch {}
 
 $("#join-form").addEventListener("submit", (e) => {
   e.preventDefault();
-  if (!myName()) return;
-  try { localStorage.setItem("sync-name", myName()); } catch {}
+  if (!myName()) {
+    return;
+  }
+  try {
+    localStorage.setItem("sync-name", myName());
+  } catch {}
   joined = true;
   $("#join").hidden = true;
   send({ type: "hello", name: myName() });
-  if (apiReady) makePlayer();
-  if (state) render();
+  if (apiReady) {
+    makePlayer();
+  }
+  if (state) {
+    render();
+  }
   // If YouTube's player script never arrives, say so instead of waiting forever.
   setTimeout(() => {
-    if (playerReady) return;
+    if (playerReady) {
+      return;
+    }
     const m = $("#message");
-    m.textContent = apiReady || apiScript !== "error"
-      ? "The YouTube player hasn't finished loading. Try reloading the page."
-      : "The YouTube player couldn't load. An ad or content blocker may be blocking youtube.com. Allow it for this site and reload.";
+    m.textContent =
+      apiReady || apiScript !== "error"
+        ? "The YouTube player hasn't finished loading. Try reloading the page."
+        : "The YouTube player couldn't load. An ad or content blocker may be blocking youtube.com. Allow it for this site and reload.";
     m.hidden = false;
     clearTimeout(messageTimer);
   }, 10000);
@@ -445,7 +590,9 @@ $("#join-form").addEventListener("submit", (e) => {
 $("#add-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const input = $("#add-input");
-  if (!input.value.trim()) return;
+  if (!input.value.trim()) {
+    return;
+  }
   send({ type: "add", input: input.value });
   input.value = "";
 });

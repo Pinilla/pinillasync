@@ -24,14 +24,20 @@ export function emptyRoom(now: number): RoomState {
 }
 
 export function positionAt(state: RoomState, now: number): number {
-  if (!state.current) return 0;
-  if (!state.playing) return state.position;
+  if (!state.current) {
+    return 0;
+  }
+  if (!state.playing) {
+    return state.position;
+  }
   return state.position + (now - state.updatedAt) / 1000;
 }
 
 function cleanPosition(position: unknown): number {
   const n = Number(position);
-  if (!Number.isFinite(n) || n < 0) return 0;
+  if (!Number.isFinite(n) || n < 0) {
+    return 0;
+  }
   return Math.min(n, 24 * 3600);
 }
 
@@ -39,22 +45,40 @@ function cleanPosition(position: unknown): number {
 // within the last two seconds, so a bad clock can't move playback far.
 function cleanTime(at: unknown, now: number): number {
   const n = Number(at);
-  if (!Number.isFinite(n) || n > now || n < now - 2000) return now;
+  if (!Number.isFinite(n) || n > now || n < now - 2000) {
+    return now;
+  }
   return n;
 }
 
 export function play(state: RoomState, position: unknown, at: unknown, now: number): RoomState {
-  if (!state.current) return state;
-  return { ...state, playing: true, position: cleanPosition(position), updatedAt: cleanTime(at, now) };
+  if (!state.current) {
+    return state;
+  }
+  return {
+    ...state,
+    playing: true,
+    position: cleanPosition(position),
+    updatedAt: cleanTime(at, now),
+  };
 }
 
 export function pause(state: RoomState, position: unknown, at: unknown, now: number): RoomState {
-  if (!state.current) return state;
-  return { ...state, playing: false, position: cleanPosition(position), updatedAt: cleanTime(at, now) };
+  if (!state.current) {
+    return state;
+  }
+  return {
+    ...state,
+    playing: false,
+    position: cleanPosition(position),
+    updatedAt: cleanTime(at, now),
+  };
 }
 
 export function seek(state: RoomState, position: unknown, at: unknown, now: number): RoomState {
-  if (!state.current) return state;
+  if (!state.current) {
+    return state;
+  }
   return { ...state, position: cleanPosition(position), updatedAt: cleanTime(at, now) };
 }
 
@@ -64,7 +88,9 @@ export function add(state: RoomState, item: Item, now: number): RoomState {
   if (!state.current) {
     return { ...state, current: item, playing: false, position: 0, updatedAt: now };
   }
-  if (state.queue.length >= MAX_QUEUE) return state;
+  if (state.queue.length >= MAX_QUEUE) {
+    return state;
+  }
   return { ...state, queue: [...state.queue, item] };
 }
 
@@ -83,7 +109,9 @@ export function next(state: RoomState, now: number, keepPlaying = state.playing)
 // Both browsers report the end of a video. Only the first report for the
 // current item advances, so the queue doesn't skip twice.
 export function ended(state: RoomState, itemId: unknown, now: number): RoomState {
-  if (!state.current || state.current.id !== itemId) return state;
+  if (!state.current || state.current.id !== itemId) {
+    return state;
+  }
   return next(state, now, true);
 }
 
@@ -93,7 +121,9 @@ export function remove(state: RoomState, itemId: unknown): RoomState {
 
 export function playNow(state: RoomState, itemId: unknown, now: number): RoomState {
   const item = state.queue.find((i) => i.id === itemId);
-  if (!item) return state;
+  if (!item) {
+    return state;
+  }
   return {
     current: item,
     queue: state.queue.filter((i) => i.id !== itemId),
@@ -108,9 +138,13 @@ const ID = /^[A-Za-z0-9_-]{11}$/;
 // Accepts a bare video ID or any common YouTube link, including youtu.be,
 // /shorts/, /embed/, /live/ and music.youtube.com.
 export function parseVideoId(input: unknown): string | null {
-  if (typeof input !== "string") return null;
+  if (typeof input !== "string") {
+    return null;
+  }
   const text = input.trim();
-  if (ID.test(text)) return text;
+  if (ID.test(text)) {
+    return text;
+  }
   let url: URL;
   try {
     url = new URL(text.includes("://") ? text : `https://${text}`);

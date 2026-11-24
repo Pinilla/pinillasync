@@ -5,12 +5,20 @@
   "license": "MIT",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "start": "node src/server.ts",
-    "test": "node --test \"test/**/*.test.ts\""
+    "test": "node --test \"test/**/*.test.ts\"",
+    "format": "oxlint --fix --quiet; oxlint --fix --quiet; prettier --write --log-level warn . && oxlint",
+    "check-format": "oxlint && prettier --check ."
   },
   "dependencies": {
     "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "oxlint": "^1.95.0",
+    "prettier": "^3.10.1"
   }
 }
