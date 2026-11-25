@@ -25,6 +25,8 @@ npm test
 npm start          # http://127.0.0.1:3200
 ```
 
+`npm install` also turns on a pre-commit hook, `.githooks/pre-commit`. It runs `npm run format`, stages the fixes in files you staged in full, and stops the commit if `npm run check-format` still fails.
+
 | Variable | Default | Meaning |
 |---|---|---|
 | `HOST` | `127.0.0.1` | Address to listen on |

@@ -12,7 +12,8 @@
     "start": "node src/server.ts",
     "test": "node --test \"test/**/*.test.ts\"",
     "format": "oxlint --fix --quiet; oxlint --fix --quiet; prettier --write --log-level warn . && oxlint",
-    "check-format": "oxlint && prettier --check ."
+    "check-format": "oxlint && prettier --check .",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "ws": "^8.18.3"
